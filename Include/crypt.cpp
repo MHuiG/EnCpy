@@ -249,22 +249,6 @@ int c2i(char ch) {
 }
 
 
-char * wchar2char(const wchar_t* wchar ){
-	char * m_char;    
-	int len= WideCharToMultiByte( CP_ACP ,0,wchar ,wcslen( wchar ), NULL,0, NULL ,NULL );    
-	m_char= (char*)malloc(sizeof(char)*(len+1));    
-	WideCharToMultiByte( CP_ACP ,0,wchar ,wcslen( wchar ),m_char,len, NULL ,NULL );     
-	m_char[len]= '\0';     
-	return m_char; 
-}
-wchar_t * char2wchar(const char* cchar){     
-	wchar_t *m_wchar;    
-	int len = MultiByteToWideChar( CP_ACP ,0,cchar ,strlen( cchar), NULL,0);     
-	m_wchar= (wchar_t*)malloc(sizeof(wchar_t)*(len+1));    	
-	MultiByteToWideChar( CP_ACP ,0,cchar,strlen( cchar),m_wchar,len);     
-	m_wchar[len]= '\0' ;    
-	return m_wchar; 
-}
 
 int ISENPY(char *Filenname){
 	char *pFile;
@@ -372,6 +356,22 @@ FILE *decrypt_open(char *filename,char *mode){
 
 #else
 
+char * wchar2char(const wchar_t* wchar ){
+	char * m_char;    
+	int len= WideCharToMultiByte( CP_ACP ,0,wchar ,wcslen( wchar ), NULL,0, NULL ,NULL );    
+	m_char= (char*)malloc(sizeof(char)*(len+1));    
+	WideCharToMultiByte( CP_ACP ,0,wchar ,wcslen( wchar ),m_char,len, NULL ,NULL );     
+	m_char[len]= '\0';     
+	return m_char; 
+}
+wchar_t * char2wchar(const char* cchar){     
+	wchar_t *m_wchar;    
+	int len = MultiByteToWideChar( CP_ACP ,0,cchar ,strlen( cchar), NULL,0);     
+	m_wchar= (wchar_t*)malloc(sizeof(wchar_t)*(len+1));    	
+	MultiByteToWideChar( CP_ACP ,0,cchar,strlen( cchar),m_wchar,len);     
+	m_wchar[len]= '\0' ;    
+	return m_wchar; 
+}
 
 int w_aes_dencry(const wchar_t* source_path, char* password,unsigned char ** plaintext) {
 
