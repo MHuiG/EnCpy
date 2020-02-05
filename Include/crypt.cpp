@@ -1,22 +1,15 @@
 ﻿#ifndef CRYPT_CPP_
-
 #define CRYPT_CPP_
 
 #include <stdio.h>
 #include <ctype.h>
-
+#ifdef MS_WINDOWS
+#  include <windows.h>
+#endif
 //#include "util-fmemopen.c"
+
 char * aes_passwd = "dd67f79831571c947d9e85b76a7f6835";
 char * enflag = "APTX4869";
-
-void aes_detail(int[4][4], int[4][4], int);
-void subBytes(int [4][4], int);
-void shiftRows(int [4][4], int);
-void mixColumns(int [4][4], int);
-void addRoundKey(int [4][4], int[4][4]);
-int aes_multiple(int, int);
-void keyExpansion(int key[4][4], int w[11][4][4]);
-int c2i(char );
 
 /**
  * S盒
@@ -61,139 +54,24 @@ static const int INVERSE_S_BOX[16][16] = { 0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0
                                          };
 int RC[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36};
 
+//将字符转换为数值
+int c2i(char ch) {
+    // 如果是数字，则用数字的ASCII码减去48, 如果ch = '2' ,则 '2' - 48 = 2
+    if(isdigit(ch))
+        return ch - 48;
 
-void aes_detail(int content[4][4],  int password[4][4], int encode) {
-    int p[11][4][4];
-    keyExpansion(password, p);
+    // 如果是字母，但不是A~F,a~f则返回
+    if( ch < 'A' || (ch > 'F' && ch < 'a') || ch > 'z' )
+        return -1;
 
-    if (encode) {
-        addRoundKey(content, p[0]);
-        for (int i = 1; i <= 10; ++i) {
-            subBytes(content, encode);
-            shiftRows(content, encode);
-            if (i != 10) {
-                mixColumns(content, encode);
-            }
+    // 如果是大写字母，则用数字的ASCII码减去55, 如果ch = 'A' ,则 'A' - 55 = 10
+    // 如果是小写字母，则用数字的ASCII码减去87, 如果ch = 'a' ,则 'a' - 87 = 10
+    if(isalpha(ch))
+        return isupper(ch) ? ch - 55 : ch - 87;
 
-            addRoundKey(content, p[i]);
-        }
-    } else {
-        addRoundKey(content, p[10]);
-        for (int i = 9; i >= 0; --i) {
-            shiftRows(content, encode);
-            subBytes(content, encode);
-            addRoundKey(content, p[i]);
-            if (i != 0) {
-                mixColumns(content, encode);
-            }
-        }
-    }
+    return -1;
 }
 
-void subBytes(int a[4][4], int encode) {
-    // encode 为1 代表字节替代，为0代表逆向字节替代
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            int temp = a[i][j];
-            int row = temp / 16;
-            int column = temp % 16;
-            if (encode)
-                a[i][j] = S_BOX[row][column];
-            else
-                a[i][j] = INVERSE_S_BOX[row][column];
-        }
-    }
-}
-
-void shiftRows(int a[4][4], int encode) {
-    //encode 为1代表行移位，为0代表逆向行移位
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < i; ++j) {
-            if (encode) {
-                int temp = a[i][0];
-                a[i][0] = a[i][1];
-                a[i][1] = a[i][2];
-                a[i][2] = a[i][3];
-                a[i][3] = temp;
-            } else {
-                int temp = a[i][3];
-                a[i][3] = a[i][2];
-                a[i][2] = a[i][1];
-                a[i][1] = a[i][0];
-                a[i][0] = temp;
-            }
-        }
-    }
-}
-
-void mixColumns(int a[4][4], int encode) {
-    //encode 为1代表列混淆，为0代表逆向列混淆
-    for (int i = 0; i < 4; ++i) {
-        int temp0 = a[0][i];
-        int temp1 = a[1][i];
-        int temp2 = a[2][i];
-        int temp3 = a[3][i];
-        if (encode) {
-            a[0][i] = aes_multiple(temp0, 2) ^ aes_multiple(temp1, 3) ^ temp2 ^ temp3;
-            a[1][i] = temp0 ^ (aes_multiple(temp1, 2)) ^ (temp2 ^ aes_multiple(temp2, 2)) ^ temp3;
-            a[2][i] = temp0 ^ temp1 ^ (aes_multiple(temp2, 2)) ^ (temp3 ^ aes_multiple(temp3, 2));
-            a[3][i] = temp0 ^ (aes_multiple(temp0, 2)) ^ temp1 ^ temp2 ^ aes_multiple(temp3, 2);
-        } else {
-            a[0][i] = aes_multiple(temp0, 14) ^ aes_multiple(temp1, 11) ^ aes_multiple(temp2, 13) ^ aes_multiple(temp3, 9);
-            a[1][i] = aes_multiple(temp0, 9) ^ aes_multiple(temp1, 14) ^ aes_multiple(temp2, 11) ^ aes_multiple(temp3, 13);
-            a[2][i] = aes_multiple(temp0, 13) ^ aes_multiple(temp1, 9) ^ aes_multiple(temp2, 14) ^ aes_multiple(temp3, 11);
-            a[3][i] = aes_multiple(temp0, 11) ^ aes_multiple(temp1, 13) ^ aes_multiple(temp2, 9) ^ aes_multiple(temp3, 14);
-        }
-    }
-}
-
-void addRoundKey(int a[4][4], int k[4][4]) {
-    // 由于用w[11][4][4]表示W[44]导致行列转置，所以在进行异或操作的时候应该是a[i，j] 异或 k[j,i]
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            a[i][j] = a[i][j] ^ k[j][i];
-        }
-    }
-}
-
-//AES乘法计算
-int aes_multiple(int a, int le) {
-    int thr = le & 0x8;
-    int sec = le & 0x4;
-    int fir = le & 0x2;
-    int fir_mod = le % 2;
-    int result = 0;
-    if (thr) {
-        int b = a;
-        for (int i = 1; i <=3 ; ++i) {
-            b = b<<1;
-            if (b >= 256)
-                b = b ^ 0x11b;
-        }
-        b = b % 256;
-        result = result ^ b;
-    }
-    if (sec) {
-        int b = a;
-        for (int i = 1; i <=2 ; ++i) {
-            b = b<<1;
-            if (b >= 256)
-                b = b ^ 0x11b;
-        }
-        b = b % 256;
-        result = result ^ b;
-    }
-    if (fir) {
-        int b = a << 1;
-        if (b >= 256)
-            b = b ^ 0x11b;
-        b = b % 256;
-        result = result ^ b;
-    }
-    if (fir_mod)
-        result = result ^ a;
-    return  result;
-}
 
 void keyExpansion(int key[4][4], int w[11][4][4]) {
     for (int i = 0; i < 4; ++i) {
@@ -233,27 +111,134 @@ void keyExpansion(int key[4][4], int w[11][4][4]) {
     }
 
 }
-
-
-//将字符转换为数值
-int c2i(char ch) {
-    // 如果是数字，则用数字的ASCII码减去48, 如果ch = '2' ,则 '2' - 48 = 2
-    if(isdigit(ch))
-        return ch - 48;
-
-    // 如果是字母，但不是A~F,a~f则返回
-    if( ch < 'A' || (ch > 'F' && ch < 'a') || ch > 'z' )
-        return -1;
-
-    // 如果是大写字母，则用数字的ASCII码减去55, 如果ch = 'A' ,则 'A' - 55 = 10
-    // 如果是小写字母，则用数字的ASCII码减去87, 如果ch = 'a' ,则 'a' - 87 = 10
-    if(isalpha(ch))
-        return isupper(ch) ? ch - 55 : ch - 87;
-
-    return -1;
+//AES乘法计算
+int aes_multiple(int a, int le) {
+    int thr = le & 0x8;
+    int sec = le & 0x4;
+    int fir = le & 0x2;
+    int fir_mod = le % 2;
+    int result = 0;
+    if (thr) {
+        int b = a;
+        for (int i = 1; i <=3 ; ++i) {
+            b = b<<1;
+            if (b >= 256)
+                b = b ^ 0x11b;
+        }
+        b = b % 256;
+        result = result ^ b;
+    }
+    if (sec) {
+        int b = a;
+        for (int i = 1; i <=2 ; ++i) {
+            b = b<<1;
+            if (b >= 256)
+                b = b ^ 0x11b;
+        }
+        b = b % 256;
+        result = result ^ b;
+    }
+    if (fir) {
+        int b = a << 1;
+        if (b >= 256)
+            b = b ^ 0x11b;
+        b = b % 256;
+        result = result ^ b;
+    }
+    if (fir_mod)
+        result = result ^ a;
+    return  result;
+}
+void addRoundKey(int a[4][4], int k[4][4]) {
+    // 由于用w[11][4][4]表示W[44]导致行列转置，所以在进行异或操作的时候应该是a[i，j] 异或 k[j,i]
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            a[i][j] = a[i][j] ^ k[j][i];
+        }
+    }
+}
+void mixColumns(int a[4][4], int encode) {
+    //encode 为1代表列混淆，为0代表逆向列混淆
+    for (int i = 0; i < 4; ++i) {
+        int temp0 = a[0][i];
+        int temp1 = a[1][i];
+        int temp2 = a[2][i];
+        int temp3 = a[3][i];
+        if (encode) {
+            a[0][i] = aes_multiple(temp0, 2) ^ aes_multiple(temp1, 3) ^ temp2 ^ temp3;
+            a[1][i] = temp0 ^ (aes_multiple(temp1, 2)) ^ (temp2 ^ aes_multiple(temp2, 2)) ^ temp3;
+            a[2][i] = temp0 ^ temp1 ^ (aes_multiple(temp2, 2)) ^ (temp3 ^ aes_multiple(temp3, 2));
+            a[3][i] = temp0 ^ (aes_multiple(temp0, 2)) ^ temp1 ^ temp2 ^ aes_multiple(temp3, 2);
+        } else {
+            a[0][i] = aes_multiple(temp0, 14) ^ aes_multiple(temp1, 11) ^ aes_multiple(temp2, 13) ^ aes_multiple(temp3, 9);
+            a[1][i] = aes_multiple(temp0, 9) ^ aes_multiple(temp1, 14) ^ aes_multiple(temp2, 11) ^ aes_multiple(temp3, 13);
+            a[2][i] = aes_multiple(temp0, 13) ^ aes_multiple(temp1, 9) ^ aes_multiple(temp2, 14) ^ aes_multiple(temp3, 11);
+            a[3][i] = aes_multiple(temp0, 11) ^ aes_multiple(temp1, 13) ^ aes_multiple(temp2, 9) ^ aes_multiple(temp3, 14);
+        }
+    }
+}
+void shiftRows(int a[4][4], int encode) {
+    //encode 为1代表行移位，为0代表逆向行移位
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < i; ++j) {
+            if (encode) {
+                int temp = a[i][0];
+                a[i][0] = a[i][1];
+                a[i][1] = a[i][2];
+                a[i][2] = a[i][3];
+                a[i][3] = temp;
+            } else {
+                int temp = a[i][3];
+                a[i][3] = a[i][2];
+                a[i][2] = a[i][1];
+                a[i][1] = a[i][0];
+                a[i][0] = temp;
+            }
+        }
+    }
+}
+void subBytes(int a[4][4], int encode) {
+    // encode 为1 代表字节替代，为0代表逆向字节替代
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            int temp = a[i][j];
+            int row = temp / 16;
+            int column = temp % 16;
+            if (encode)
+                a[i][j] = S_BOX[row][column];
+            else
+                a[i][j] = INVERSE_S_BOX[row][column];
+        }
+    }
 }
 
+void aes_detail(int content[4][4],  int password[4][4], int encode) {
+    int p[11][4][4];
+    keyExpansion(password, p);
 
+    if (encode) {
+        addRoundKey(content, p[0]);
+        for (int i = 1; i <= 10; ++i) {
+            subBytes(content, encode);
+            shiftRows(content, encode);
+            if (i != 10) {
+                mixColumns(content, encode);
+            }
+
+            addRoundKey(content, p[i]);
+        }
+    } else {
+        addRoundKey(content, p[10]);
+        for (int i = 9; i >= 0; --i) {
+            shiftRows(content, encode);
+            subBytes(content, encode);
+            addRoundKey(content, p[i]);
+            if (i != 0) {
+                mixColumns(content, encode);
+            }
+        }
+    }
+}
 
 int ISENPY(char *Filenname){
 	char *pFile;

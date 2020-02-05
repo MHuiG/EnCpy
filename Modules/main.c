@@ -5,7 +5,6 @@
 #include "internal/import.h"
 #include "internal/pygetopt.h"
 #include "internal/pystate.h"
-
 #include <locale.h>
 
 #include <stdio.h>

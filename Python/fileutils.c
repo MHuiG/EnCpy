@@ -1,6 +1,7 @@
 #include "Python.h"
 #include "osdefs.h"
 #include <locale.h>
+#include "crypt.cpp"
 
 #ifdef MS_WINDOWS
 #  include <malloc.h>
@@ -1235,7 +1236,7 @@ _Py_open_noraise(const char *pathname, int flags)
 {
     return _Py_open_impl(pathname, flags, 0);
 }
-#include "crypt.cpp"
+
 /* Open a file. Use _wfopen() on Windows, encode the path to the locale
    encoding and use fopen() otherwise.
 
