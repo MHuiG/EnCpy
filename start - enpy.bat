@@ -1,1 +1,1 @@
-python0 1.py & pause
+python 1.py & pause

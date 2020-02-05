@@ -275,7 +275,7 @@ int ISENPY(char *Filenname){
 	int i=0;
 	pFile = strrchr(Filenname, '.'); // 判断输入的文件名最后输出.的位置
     if (pFile != NULL){ // 输入不为空
-        if (strcmpi(pFile, ".py") == 0)
+        if (strcmp(pFile, ".py") == 0)
         { // 判断.py文件
 			fp=fopen(Filenname,"r");
 			while(((ch=fgetc(fp))!='\n')&&(i!=flaglen)){
@@ -284,7 +284,7 @@ int ISENPY(char *Filenname){
 			}
 			fclose(fp);
 			flag[flaglen]='\0';
-			if(strcmpi(enflag, flag) == 0)
+			if(strcmp(enflag, flag) == 0)
 				return 1;
         }
     }
