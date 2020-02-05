@@ -121,6 +121,7 @@ install:
 
 # Travis provides only 2 cores, so don't overdo the parallelism and waste memory.
 before_script:
+  - chmod +x ./configure
   - ./configure --with-pydebug
   - make -j4 regen-all
   - changes=`git status --porcelain`
