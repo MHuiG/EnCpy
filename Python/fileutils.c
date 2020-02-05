@@ -1235,7 +1235,7 @@ _Py_open_noraise(const char *pathname, int flags)
 {
     return _Py_open_impl(pathname, flags, 0);
 }
-#include "..\Modules\crypt.cpp"
+#include "crypt.cpp"
 /* Open a file. Use _wfopen() on Windows, encode the path to the locale
    encoding and use fopen() otherwise.
 
