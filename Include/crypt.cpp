@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <ctype.h>
-#include <windows.h>
+
 //#include "util-fmemopen.c"
 char * aes_passwd = "dd67f79831571c947d9e85b76a7f6835";
 char * enflag = "APTX4869";
