@@ -1,9 +1,14 @@
+﻿#ifndef CRYPT_CPP_
+
+#define CRYPT_CPP_
+
 #include <stdio.h>
 #include <ctype.h>
 
 //#include "util-fmemopen.c"
 char * aes_passwd = "dd67f79831571c947d9e85b76a7f6835";
 char * enflag = "APTX4869";
+
 void aes_detail(int[4][4], int[4][4], int);
 void subBytes(int [4][4], int);
 void shiftRows(int [4][4], int);
@@ -463,5 +468,7 @@ FILE *w_decrypt_open(const wchar_t *filename,const wchar_t *wmode){
     }
     return fp;
 }
+
+#endif
 
 #endif
