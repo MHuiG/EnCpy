@@ -65,6 +65,7 @@ matrix:
           packages:
             - xvfb
       before_script:
+        - chmod +x ./configure
         - ./configure
         - make -s -j4
         # Need a venv that can parse covered code.
